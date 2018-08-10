@@ -15,9 +15,28 @@ from urllib.parse import urlparse # for python3
 
 # EMAIL_REGEX = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
 # PHONE_REGEX =
+
+
+FILE_EXTENSIONS = [
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.js',
+    '.css',
+    '.pdf',
+    '.ico',
+    '.bmp',
+    '.svg',
+]
 warnings.filterwarnings('ignore') # Disable SSL related warnings
 
 end = red = white = green = yellow = run = bad = good = info = que = ''
+
+def is_string_a_filename(string):
+    for extension in FILE_EXTENSIONS:
+        if extension in string:
+            return True
+    return False
 
 def get_user_agent():
     return "Mozilla/5.0 (Macintosh; Intel Mac OS X {0}_{1}_{2}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36".format(random.randint(1, 10), random.randint(1, 15), random.randint(1, 20))
@@ -181,8 +200,7 @@ def crawl(main_inp, delay=0, timeout=6, crawl_level=2):
 
     def is_link(url):
         # file extension that don't need to be crawled and are files
-        is_url_a_file = '.png' in url or '.jpg' in url or '.jpeg' in url or '.js' in url or '.css' in url or '.pdf' in url or '.ico' in url or '.bmp' in url or '.svg' in url or '.json' in url or '.xml' in url
-        return url not in processed and not is_url_a_file
+        return url not in processed and not is_string_a_filename(url)
 
     ####
     # This function extracts string based on regex pattern supplied by user
@@ -333,7 +351,7 @@ def crawl(main_inp, delay=0, timeout=6, crawl_level=2):
 
     for match in bad_intel:
         for x in match: # because "match" is a tuple
-            if x != '': # if the value isn't empty
+            if x != '' and not is_string_a_filename(x): # if the value isn't empty
                 intel.add(x)
 
     for url in external:
@@ -370,5 +388,4 @@ def crawl(main_inp, delay=0, timeout=6, crawl_level=2):
 
     print('%s Total time taken: %i minutes %i seconds' % (info, minutes, seconds))
     print('%s Average request time: %s seconds' % (info, time_per_request))
-    print(intel)
     return intel
