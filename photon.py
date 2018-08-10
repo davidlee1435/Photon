@@ -373,18 +373,12 @@ def crawl(main_inp, delay=0, timeout=6, crawl_level=2):
     datasets = [intel, custom, failed, storage, scripts, external, fuzzable, endpoints]
 
     # Printing out results
-    print('''%s
-    %s URLs: %i
-    %s Intel: %i
-    %s Endpoints: %i
-    %s Fuzzable URLs: %i
-    %s Custom strings: %i
-    %s JavaScript Files: %i
-    %s External References: %i
-    %s''' % ((('%s-%s' % (red, end)) * 50), good, len(storage), good,
-    len(intel), good, len(endpoints), good, len(fuzzable), good,
-    len(custom), good, len(scripts), good, len(external),
-    (('%s-%s' % (red, end)) * 50)))
+    print('''
+        %s URLs: %i
+        %s Intel: %i
+        %s JavaScript Files: %i
+        ''' % (good, len(storage), good,len(intel), good, len(scripts))
+    )
 
     print('%s Total time taken: %i minutes %i seconds' % (info, minutes, seconds))
     print('%s Average request time: %s seconds' % (info, time_per_request))
