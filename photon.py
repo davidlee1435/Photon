@@ -19,9 +19,12 @@ warnings.filterwarnings('ignore') # Disable SSL related warnings
 
 end = red = white = green = yellow = run = bad = good = info = que = ''
 
-def main(main_inp, delay=0, timeout=6, crawl_level=2):
+def get_user_agent():
+    return "Mozilla/5.0 (Macintosh; Intel Mac OS X {0}_{1}_{2}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36".format(random.randint(1, 10), random.randint(1, 15), random.randint(1, 20))
+
+def crawl(main_inp, delay=0, timeout=6, crawl_level=2):
     ninja = True  # Ninja mode toggle
-    thread_count = 50  # Number of threads
+    thread_count = 16  # Number of threads
 
     # Variables we are gonna use later to store stuff
     intel = set() # emails, website accounts, aws buckets etc.
@@ -56,11 +59,8 @@ def main(main_inp, delay=0, timeout=6, crawl_level=2):
     # This function makes requests to webpage and returns response body
     ####
 
-    if args.user_agent:
-        user_agents = args.user_agent.split(',')
-    else:
-        with open(sys.path[0] + '/core/user-agents.txt', 'r') as uas:
-            user_agents = [agent.strip('\n') for agent in uas]
+    with open(sys.path[0] + '/photon/core/user-agents.txt', 'r') as uas:
+        user_agents = [agent.strip('\n') for agent in uas]
 
     def requester(url):
         processed.add(url) # mark the url as crawled
@@ -242,8 +242,8 @@ def main(main_inp, delay=0, timeout=6, crawl_level=2):
 
         intel_extractor(response)
         js_extractor(response)
-        if args.regex and not supress_regex:
-            regxy(args.regex, response)
+        # if args.regex and not supress_regex:
+        #     regxy(args.regex, response)
 
     ####
     # This function extracts endpoints from JavaScript Code
@@ -299,15 +299,15 @@ def main(main_inp, delay=0, timeout=6, crawl_level=2):
     zap(main_url)
 
     # this is so the level 1 emails are parsed as well
-    storage = set(remove_regex(storage, args.exclude))
+    storage = set(storage)
 
     # Step 2. Crawl recursively to the limit specified in "crawl_level"
     for level in range(crawl_level):
-        links = remove_regex(storage - processed, args.exclude) # links to crawl = all links - already crawled links
+        links = storage - processed # links to crawl = all links - already crawled links
         if not links: # if links to crawl are 0 i.e. all links have been crawled
             break
         elif len(storage) <= len(processed): # if crawled links are somehow more than all links. Possible? ;/
-            if len(storage) > 2 + len(args.seeds): # if you know it, you know it
+            if len(storage) > 2: # if you know it, you know it
                 break
         print('%s Level %i: %i URLs' % (run, level + 1, len(links)))
         try:
@@ -337,7 +337,7 @@ def main(main_inp, delay=0, timeout=6, crawl_level=2):
                 intel.add(x)
 
     for url in external:
-        if 'github.com' in url or 'facebook.com' in url or 'instagram.com' in url or 'youtube.com' in url:
+        if 'github.com' in url or 'facebook.com' in url or 'instagram.com' in url or 'youtube.com' in url or 'twitter.com' in url:
             intel.add(url)
 
     now = time.time() # records the time at which crawling stopped
@@ -352,7 +352,7 @@ def main(main_inp, delay=0, timeout=6, crawl_level=2):
         return minutes, seconds, time_per_request
     minutes, seconds, time_per_request = timer(diff)
 
-    datasets = [intel, custom, failed, remove_regex(storage, args.exclude), scripts, external, fuzzable, endpoints]
+    datasets = [intel, custom, failed, storage, scripts, external, fuzzable, endpoints]
 
     # Printing out results
     print('''%s
@@ -372,21 +372,3 @@ def main(main_inp, delay=0, timeout=6, crawl_level=2):
     print('%s Average request time: %s seconds' % (info, time_per_request))
     print(intel)
     return intel
-
-if __name__ == '__main__':
-    # Processing command line arguments
-    parser = argparse.ArgumentParser()
-    # Options
-    parser.add_argument('-u', '--url', help='root url', dest='root')
-    parser.add_argument('-r', '--regex', help='regex pattern', dest='regex')
-    parser.add_argument('-s', '--seeds', help='additional seed urls', dest='seeds', nargs="+", default=[])
-    parser.add_argument('--user-agent', help='custom user agent(s)', dest='user_agent')
-    parser.add_argument('--exclude', help='exclude urls matching this regex', dest='exclude', type=str)
-    # Switches
-    args = parser.parse_args()
-    if args.root: # if the user has supplied a url
-        root_url = args.root
-        if root_url.endswith('/'): # if the url ends with '/'
-            root_url = root_url[:-1] # we will remove it as it can cause problems later in the code
-
-    main(root_url)
