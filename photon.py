@@ -10,7 +10,7 @@ import warnings
 import argparse
 import threading
 from re import search, findall
-from requests import get, post
+from requests import get, post, exceptions
 from urllib.parse import urlparse # for python3
 
 # EMAIL_REGEX = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
@@ -97,7 +97,7 @@ def crawl(main_inp, delay=0, timeout=1, crawl_level=2):
             try:
                 try:
                     response = get(url, headers=headers, verify=False, timeout=timeout, stream=True)
-                except requests.exceptions.ReadTimeout:
+                except exceptions.ReadTimeout:
                     print("{} timedout".format(url))
                     return 'dummy'
                 if 'text/html' in response.headers['content-type']:
@@ -121,7 +121,7 @@ def crawl(main_inp, delay=0, timeout=1, crawl_level=2):
             try:
                 response = get('https://pixlr.com/proxy/?url=' + url, timeout=timeout, headers={'Accept-Encoding' : 'gzip'}, verify=False)
                 return response.text
-            except requests.exceptions.ReadTimeout:
+            except exceptions.ReadTimeout:
                 print("{} timedout".format(url))
             return 'dummy'
 
@@ -144,7 +144,7 @@ def crawl(main_inp, delay=0, timeout=1, crawl_level=2):
             try:
                 response = get('https://www.photopea.com/mirror.php?url=' + url, timeout=timeout, verify=False)
                 return response.text
-            except requests.exceptions.ReadTimeout:
+            except exceptions.ReadTimeout:
                 print("{} timedout".format(url))
             return 'dummy'
 
@@ -162,7 +162,7 @@ def crawl(main_inp, delay=0, timeout=1, crawl_level=2):
     def zap(url):
         try:
             response = get(url + '/robots.txt', timeout=timeout).text # makes request to robots.txt
-        except requests.exceptions.ReadTimeout:
+        except exceptions.ReadTimeout:
             print("{} timedout".format(url))
         if '<body' not in response: # making sure robots.txt isn't some fancy 404 page
             matches = findall(r'Allow: (.*)|Disallow: (.*)', response) # If you know it, you know it
