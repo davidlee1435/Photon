@@ -41,7 +41,7 @@ def is_string_a_filename(string):
 def get_user_agent():
     return "Mozilla/5.0 (Macintosh; Intel Mac OS X {0}_{1}_{2}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36".format(random.randint(1, 10), random.randint(1, 15), random.randint(1, 20))
 
-def crawl(main_inp, delay=0, timeout=6, crawl_level=2):
+def crawl(main_inp, delay=0, timeout=1, crawl_level=2):
     ninja = True  # Ninja mode toggle
     thread_count = 16  # Number of threads
 
@@ -65,7 +65,7 @@ def crawl(main_inp, delay=0, timeout=6, crawl_level=2):
         main_url = main_inp
     else:
         try:
-            get('https://' + main_inp)
+            get('https://' + main_inp, timeout=timeout)
             main_url = 'https://' + main_inp
         except:
             main_url = 'http://' + main_inp
@@ -114,7 +114,7 @@ def crawl(main_inp, delay=0, timeout=6, crawl_level=2):
             if url == main_url:
                 url = main_url + '/' # because pixlr throws error if http://example.com is used
             # make request and return response
-            return get('https://pixlr.com/proxy/?url=' + url, headers={'Accept-Encoding' : 'gzip'}, verify=False).text
+            return get('https://pixlr.com/proxy/?url=' + url, timeout=timeout, headers={'Accept-Encoding' : 'gzip'}, verify=False).text
 
         # codebeautify.org API
         def code_beautify(url):
@@ -132,7 +132,7 @@ def crawl(main_inp, delay=0, timeout=6, crawl_level=2):
         # www.photopea.com API
         def photopea(url):
             # make request and return response
-            return get('https://www.photopea.com/mirror.php?url=' + url, verify=False).text
+            return get('https://www.photopea.com/mirror.php?url=' + url, timeout=timeout, verify=False).text
 
         if ninja: # if the ninja mode is enabled
             # select a random request function i.e. random API
@@ -146,7 +146,7 @@ def crawl(main_inp, delay=0, timeout=6, crawl_level=2):
     ####
 
     def zap(url):
-        response = get(url + '/robots.txt').text # makes request to robots.txt
+        response = get(url + '/robots.txt', timeout=timeout).text # makes request to robots.txt
         if '<body' not in response: # making sure robots.txt isn't some fancy 404 page
             matches = findall(r'Allow: (.*)|Disallow: (.*)', response) # If you know it, you know it
             if matches:
@@ -155,7 +155,7 @@ def crawl(main_inp, delay=0, timeout=6, crawl_level=2):
                     if '*' not in match: # if the url doesn't use a wildcard
                         url = main_url + match
                         storage.add(url) # add the url to storage list for crawling
-        response = get(url + '/sitemap.xml').text # makes request to sitemap.xml
+        response = get(url + '/sitemap.xml', timeout=timeout).text # makes request to sitemap.xml
         if '<body' not in response: # making sure robots.txt isn't some fancy 404 page
             matches = findall(r'<loc>[^<]*</loc>', response) # regex for extracting urls
             if matches: # if there are any matches
