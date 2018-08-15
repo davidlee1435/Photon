@@ -95,7 +95,11 @@ def crawl(main_inp, delay=0, timeout=1, crawl_level=2):
             'Connection' : 'close'}
             # make request and return response
             try:
-                response = get(url, headers=headers, verify=False, timeout=timeout, stream=True)
+                try:
+                    response = get(url, headers=headers, verify=False, timeout=timeout, stream=True)
+                except requests.exceptions.ReadTimeout:
+                    print("{} timedout".format(url))
+                    return 'dummy'
                 if 'text/html' in response.headers['content-type']:
                     if response.status_code != '404':
                         return response.text
@@ -114,7 +118,12 @@ def crawl(main_inp, delay=0, timeout=1, crawl_level=2):
             if url == main_url:
                 url = main_url + '/' # because pixlr throws error if http://example.com is used
             # make request and return response
-            return get('https://pixlr.com/proxy/?url=' + url, timeout=timeout, headers={'Accept-Encoding' : 'gzip'}, verify=False).text
+            try:
+                response = get('https://pixlr.com/proxy/?url=' + url, timeout=timeout, headers={'Accept-Encoding' : 'gzip'}, verify=False)
+                return response.text
+            except requests.exceptions.ReadTimeout:
+                print("{} timedout".format(url))
+            return 'dummy'
 
         # codebeautify.org API
         def code_beautify(url):
@@ -132,7 +141,12 @@ def crawl(main_inp, delay=0, timeout=1, crawl_level=2):
         # www.photopea.com API
         def photopea(url):
             # make request and return response
-            return get('https://www.photopea.com/mirror.php?url=' + url, timeout=timeout, verify=False).text
+            try:
+                response = get('https://www.photopea.com/mirror.php?url=' + url, timeout=timeout, verify=False)
+                return response.text
+            except requests.exceptions.ReadTimeout:
+                print("{} timedout".format(url))
+            return 'dummy'
 
         if ninja: # if the ninja mode is enabled
             # select a random request function i.e. random API
@@ -146,7 +160,10 @@ def crawl(main_inp, delay=0, timeout=1, crawl_level=2):
     ####
 
     def zap(url):
-        response = get(url + '/robots.txt', timeout=timeout).text # makes request to robots.txt
+        try:
+            response = get(url + '/robots.txt', timeout=timeout).text # makes request to robots.txt
+        except requests.exceptions.ReadTimeout:
+            print("{} timedout".format(url))
         if '<body' not in response: # making sure robots.txt isn't some fancy 404 page
             matches = findall(r'Allow: (.*)|Disallow: (.*)', response) # If you know it, you know it
             if matches:
