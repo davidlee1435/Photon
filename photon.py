@@ -9,7 +9,6 @@ import random
 import warnings
 import argparse
 import threading
-import random
 from re import search, findall
 from requests import get, post, exceptions
 from urllib.parse import urlparse # for python3
@@ -96,11 +95,7 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=2):
             'Connection' : 'close'}
             # make request and return response
             try:
-                try:
-                    response = get(url, headers=headers, verify=False, timeout=timeout, stream=True)
-                except exceptions.ReadTimeout:
-                    print("{} timedout".format(url))
-                    return 'dummy'
+                response = get(url, headers=headers, verify=False, timeout=timeout, stream=True)
                 if 'text/html' in response.headers['content-type']:
                     if response.status_code != '404':
                         return response.text
@@ -165,6 +160,7 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=2):
             response = get(url + '/robots.txt', timeout=timeout).text # makes request to robots.txt
         except exceptions.ReadTimeout:
             print("{} timedout".format(url))
+            return
         if '<body' not in response: # making sure robots.txt isn't some fancy 404 page
             matches = findall(r'Allow: (.*)|Disallow: (.*)', response) # If you know it, you know it
             if matches:
@@ -340,9 +336,10 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=2):
     # Step 2. Crawl recursively to the limit specified in "crawl_level"
     for level in range(crawl_level):
         links = storage - processed # links to crawl = all links - already crawled links
-        links = random.sample(links, MAX_NUM_LINKS)
         if not links: # if links to crawl are 0 i.e. all links have been crawled
             break
+        if len(links) > MAX_NUM_LINKS:
+            links = random.sample(links, MAX_NUM_LINKS)
         elif len(storage) <= len(processed): # if crawled links are somehow more than all links. Possible? ;/
             if len(storage) > 2: # if you know it, you know it
                 break
