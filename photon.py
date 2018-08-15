@@ -9,13 +9,14 @@ import random
 import warnings
 import argparse
 import threading
+import random
 from re import search, findall
 from requests import get, post, exceptions
 from urllib.parse import urlparse # for python3
 
 # EMAIL_REGEX = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
 # PHONE_REGEX =
-
+MAX_NUM_LINKS = 200
 
 FILE_EXTENSIONS = [
     '.png',
@@ -339,6 +340,7 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=2):
     # Step 2. Crawl recursively to the limit specified in "crawl_level"
     for level in range(crawl_level):
         links = storage - processed # links to crawl = all links - already crawled links
+        links = random.sample(links, MAX_NUM_LINKS)
         if not links: # if links to crawl are 0 i.e. all links have been crawled
             break
         elif len(storage) <= len(processed): # if crawled links are somehow more than all links. Possible? ;/
