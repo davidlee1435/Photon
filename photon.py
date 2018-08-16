@@ -41,7 +41,7 @@ def is_string_a_filename(string):
 def get_user_agent():
     return "Mozilla/5.0 (Macintosh; Intel Mac OS X {0}_{1}_{2}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36".format(random.randint(1, 10), random.randint(1, 15), random.randint(1, 20))
 
-def crawl(main_inp, delay=0, timeout=5, crawl_level=2):
+def crawl(main_inp, delay=0, timeout=5, crawl_level=1):
     ninja = True  # Ninja mode toggle
     thread_count = 16  # Number of threads
 
@@ -234,10 +234,16 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=2):
     ####
 
     def intel_extractor(response):
-        matches = findall(r'''([\w\.-]+s[\w\.-]+\.amazonaws\.com)|([\w\.-]+@[\w\.-]+\.[\.\w]+)''', response)
+        matches = findall(r'''([\w\.-]+s[\w\.-]+\.amazonaws\.com)''', response)
         if matches:
             for match in matches: # iterate over the matches
                 bad_intel.add(match) # add it to intel list
+
+        # extract phone numbers and emails
+        matches = findall(r'''([\w\.-]+@[\w\.-]+\.[\.\w]+)|(\(?\b[2-9][0-9]{2}\)?[-. ]?[2-9][0-9]{2}[-. ]?[0-9]{4}\b)''', response)
+        if matches:
+            for match in matches:
+                bad_intel.add(match)
     ####
     # This function extracts js files from the response body
     ####
