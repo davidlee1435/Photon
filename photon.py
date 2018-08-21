@@ -13,8 +13,6 @@ from re import search, findall
 from requests import get, post, exceptions
 from urllib.parse import urlparse # for python3
 
-# EMAIL_REGEX = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
-# PHONE_REGEX =
 MAX_NUM_LINKS = 200
 
 FILE_EXTENSIONS = [
@@ -59,6 +57,10 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=1):
     everything = []
     bad_intel = set() # unclean intel urls
     bad_scripts = set() # unclean javascript file urls
+
+    metrics = {
+        'no_response': 0,
+    }
 
     # If the user hasn't supplied the root url with http(s), we will handle it
     if main_inp.startswith('http'):
@@ -118,7 +120,8 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=1):
                 response = get('https://pixlr.com/proxy/?url=' + url, timeout=timeout, headers={'Accept-Encoding' : 'gzip'}, verify=False)
                 return response.text
             except exceptions.ReadTimeout:
-                print("{} timedout".format(url))
+                return 'dummy'
+
             return 'dummy'
 
         # codebeautify.org API
@@ -141,7 +144,8 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=1):
                 response = get('https://www.photopea.com/mirror.php?url=' + url, timeout=timeout, verify=False)
                 return response.text
             except exceptions.ReadTimeout:
-                print("{} timedout".format(url))
+                # print("{} timedout".format(url))
+                return 'dummy'
             return 'dummy'
 
         if ninja: # if the ninja mode is enabled
@@ -159,8 +163,8 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=1):
         try:
             response = get(url + '/robots.txt', timeout=timeout).text # makes request to robots.txt
         except exceptions.ReadTimeout:
-            print("{} timedout".format(url))
-            return
+            # print("{} timedout".format(url))
+            return 'dummy'
         if '<body' not in response: # making sure robots.txt isn't some fancy 404 page
             matches = findall(r'Allow: (.*)|Disallow: (.*)', response) # If you know it, you know it
             if matches:
@@ -173,7 +177,7 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=1):
         if '<body' not in response: # making sure robots.txt isn't some fancy 404 page
             matches = findall(r'<loc>[^<]*</loc>', response) # regex for extracting urls
             if matches: # if there are any matches
-                print('%s URLs retrieved from sitemap.xml: %s' % (good, len(matches)))
+                # print('%s URLs retrieved from sitemap.xml: %s' % (good, len(matches)))
                 for match in matches:
                     storage.add(match.split('<loc>')[1][:-6]) #cleaning up the url & adding it to the storage list for crawling
 
@@ -259,6 +263,8 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=1):
 
     def extractor(url):
         response = requester(url) # make request to the url
+        if response == 'dummy':
+            metrics['no_response'] += 1
         matches = findall(r'<[aA].*href=["\']{0,1}(.*?)["\']', response)
         for link in matches: # iterate over the matches
             link = link.split('#')[0] # remove everything after a "#" to deal with in-page anchors
@@ -289,6 +295,8 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=1):
 
     def jscanner(url):
         response = requester(url) # make request to the url
+        if response == 'dummy':
+            metrics['no_response'] += 1
         matches = findall(r'[\'"](/.*?)[\'"]|[\'"](http.*?)[\'"]', response) # extract urls/endpoints
         for match in matches: # iterate over the matches, match is a tuple
             match = match[0] + match[1] # combining the items because one of them is always empty
@@ -327,9 +335,9 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=1):
             progress = end
             if progress > len(links): # fix if overflow
                 progress = len(links)
-            sys.stdout.write('\r%s Progress: %i/%i' % (info, progress, len(links)))
-            sys.stdout.flush()
-        print('')
+            # sys.stdout.write('\r%s Progress: %i/%i' % (info, progress, len(links)))
+            # sys.stdout.flush()
+        # print('')
 
     then = time.time() # records the time at which crawling started
 
@@ -349,11 +357,11 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=1):
         elif len(storage) <= len(processed): # if crawled links are somehow more than all links. Possible? ;/
             if len(storage) > 2: # if you know it, you know it
                 break
-        print('%s Level %i: %i URLs' % (run, level + 1, len(links)))
+        # print('%s Level %i: %i URLs' % (run, level + 1, len(links)))
         try:
             flash(extractor, links)
         except KeyboardInterrupt:
-            print('')
+            # print('')
             break
 
     for match in bad_scripts:
@@ -364,7 +372,7 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=1):
         elif not match.startswith('http') and not match.startswith('//'):
             scripts.add(main_url + '/' + match)
     # Step 3. Scan the JavaScript files for enpoints
-    print('%s Crawling %i JavaScript files' % (run, len(scripts)))
+    # print('%s Crawling %i JavaScript files' % (run, len(scripts)))
     flash(jscanner, scripts)
 
     for url in storage:
@@ -395,13 +403,16 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=1):
     datasets = [intel, custom, failed, storage, scripts, external, fuzzable, endpoints]
 
     # Printing out results
-    print('''
-        %s URLs: %i
-        %s Intel: %i
-        %s JavaScript Files: %i
-        ''' % (good, len(storage), good,len(intel), good, len(scripts))
-    )
+    # print('''
+    #     %s URLs: %i
+    #     %s Intel: %i
+    #     %s JavaScript Files: %i
+    #     ''' % (good, len(storage), good,len(intel), good, len(scripts))
+    # )
 
-    print('%s Total time taken: %i minutes %i seconds' % (info, minutes, seconds))
-    print('%s Average request time: %s seconds' % (info, time_per_request))
-    return intel
+    metrics['urls_crawled'] = len(storage)
+    metrics['intel_gathered'] = len(intel)
+    metrics['scripts_crawled'] = len(scripts)
+    metrics['total_time'] = "{} minutes {} seconds".format(minutes, seconds)
+    metrics['average_request_time'] = "{} seconds".format(time_per_request)
+    return intel, metrics
