@@ -39,7 +39,7 @@ def is_string_a_filename(string):
 def get_user_agent():
     return "Mozilla/5.0 (Macintosh; Intel Mac OS X {0}_{1}_{2}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36".format(random.randint(1, 10), random.randint(1, 15), random.randint(1, 20))
 
-def crawl(main_inp, delay=0, timeout=5, crawl_level=1):
+def crawl(main_inp, delay=0, timeout=5, crawl_level=2):
     ninja = True  # Ninja mode toggle
     thread_count = 16  # Number of threads
 
@@ -416,3 +416,6 @@ def crawl(main_inp, delay=0, timeout=5, crawl_level=1):
     metrics['total_time'] = "{} minutes {} seconds".format(minutes, seconds)
     metrics['average_request_time'] = "{} seconds".format(time_per_request)
     return intel, metrics
+
+if __name__ == '__main__':
+    print(crawl('http://www.anothercastlegames.com/'))
